@@ -4,6 +4,11 @@ p.init()
 p.mixer.init()
 p.font.init()
 
+click_start = p.mixer.Sound("thing/files/click_start.mp3")
+click_end = p.mixer.Sound("thing/files/click_end.mp3")
+startup_sound = p.mixer.Sound("thing/files/startup.mp3")
+shutdown_sound = p.mixer.Sound("thing/files/shutdown.mp3")
+
 screen = p.display.set_mode((1280, 720))
 selection_overlay = p.Surface(screen.get_size(), p.SRCALPHA)
 p.display.set_caption("[PLACEHOLDER]")
@@ -12,10 +17,6 @@ clock = p.time.Clock()
 
 background = p.image.load("thing/files/wallpaper.png").convert()
 background = p.transform.scale(background, (1280, 720))
-
-click_start = p.mixer.Sound("thing/files/click_start.mp3")
-click_end = p.mixer.Sound("thing/files/click_end.mp3")
-shutdown_sound = p.mixer.Sound("thing/files/shutdown.mp3")
 
 font = p.font.Font("thing/files/Silkscreen.ttf", 18)
 time_font = p.font.Font("thing/files/Silkscreen.ttf", 14)
@@ -29,7 +30,8 @@ desktop_shortcuts = [{
     "select-rect": p.Rect(15, 25, 105, 105),
     "text-center": (68, 110),
     "selected": False,
-    "timer": -10
+    "timer": -10,
+    "active": False
     },
     {
     "name": "Calendar",
@@ -40,10 +42,11 @@ desktop_shortcuts = [{
     "select-rect": p.Rect(15, 125, 105, 105),
     "text-center": (68, 210),
     "selected": False,
-    "timer": -10
+    "timer": -10,
+    "active": False
     }]
 #note to self
-#dict structure is name=, image=, rect=, img-rect=, func=, select-rect=, text-center=, selected=, timer=
+#dict structure is name=, image=, rect=, img-rect=, func=, select-rect=, text-center=, selected=, timer=, active=
 time = ""
 date = ""
 unread_emails = 0
@@ -150,6 +153,11 @@ calendar_timer = -10
 calendar_activated = False
 calendar_window_pos = (640, 360)
 
+screen.fill((0, 0, 0))
+startup_sound.play()
+while startup_sound.get_num_channels() > 0:
+    p.time.delay(1)
+
 while running:
     elapsed_time += time_delta
     for event in p.event.get():
@@ -183,17 +191,23 @@ while running:
                     for shortcut in desktop_shortcuts:
                         if p.Rect(min(mouse_before[0], mouse_after[0]), min(mouse_before[1], mouse_after[1]), abs(mouse_after[0] - mouse_before[0]), abs(mouse_after[1] - mouse_before[1])).collidepoint(shortcut["rect"].center):
                             shortcut["selected"] = True
+                        else:
+                            shortcut["selected"] = False
                 selected = ""
                 for i, (name, rect, item) in enumerate(pressing):
-                    if item == None:
-                        if name == "start" and item.collidepoint(event.pos):
+                    if not item:
+                        if name == "start" and rect.collidepoint(event.pos):
                             start_menu_open = not start_menu_open
-                        if name == "shutdown" and item.collidepoint(event.pos):
-                            running = False
+                        if name == "shutdown" and rect.collidepoint(event.pos):
+                            if start_menu_open:
+                                running = False
                     elif item and rect.collidepoint(event.pos):
                         if elapsed_time - item["timer"] < 0.5:
                             item["timer"] = -10
                             item["selected"] = False
+                            item["active"] = not item["active"]
+                            if item["func"]:
+                                item["func"](item["active"])
                         else:
                             selected = item["name"]
                             print(f"Selected: {selected}")
@@ -218,8 +232,6 @@ while running:
     draw_taskbar_buttons(any(x[0] == "start" for x in pressing))
     if start_menu_open:
         draw_start_menu()
-    if email_activated:
-        draw_email_window()
     p.display.flip()
     time_delta = clock.tick(60)/1000
     selection_overlay.fill((0, 0, 0, 0))
