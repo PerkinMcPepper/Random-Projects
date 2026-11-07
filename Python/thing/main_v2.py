@@ -20,7 +20,30 @@ shutdown_sound = p.mixer.Sound("thing/files/shutdown.mp3")
 font = p.font.Font("thing/files/Silkscreen.ttf", 18)
 time_font = p.font.Font("thing/files/Silkscreen.ttf", 14)
 
-desktop_shortcuts = []
+desktop_shortcuts = [{
+    "name": "Email",
+    "image": "thing/files/email_icon.png",
+    "rect": p.Rect(30, 30, 75, 75),
+    "img-rect": p.Rect(30, 30, 75, 75),
+    "func": None,
+    "select-rect": p.Rect(15, 25, 105, 105),
+    "text-center": (68, 110),
+    "selected": False,
+    "timer": -10
+    },
+    {
+    "name": "Calendar",
+    "image": "thing/files/calendar_icon.png",
+    "rect": p.Rect(30, 130, 75, 75),
+    "img-rect": p.Rect(30, 130, 75, 75),
+    "func": None,
+    "select-rect": p.Rect(15, 125, 105, 105),
+    "text-center": (68, 210),
+    "selected": False,
+    "timer": -10
+    }]
+#note to self
+#dict structure is name=, image=, rect=, img-rect=, func=, select-rect=, text-center=, selected=, timer=
 time = ""
 date = ""
 unread_emails = 0
@@ -35,33 +58,30 @@ def draw_background():
     screen.blit(background, (0, 0))
 
 def draw_desktop_shortcuts():
-    email_icon = p.image.load("thing/files/email_icon.png").convert_alpha()
-    email_icon = p.transform.scale(email_icon, (75, 75))
-    screen.blit(email_icon, (30, 30))
-    email_label = font.render("Email", True, (0, 0, 0))
-    email_label_rect = email_label.get_rect(center=(68, 110))
-    screen.blit(email_label, email_label_rect)
-    img = None
-    if unread_emails > 9:
-        img = p.image.load("thing/files/notification_9+.png").convert_alpha()
-    else:
-        img = p.image.load(f"thing/files/notification_{str(unread_emails)}.png").convert_alpha()
-    img = p.transform.scale(img, (30, 30))
-    screen.blit(img, (85, 35))
-    img = p.image.load("thing/files/calendar_icon.png").convert_alpha()
-    img = p.transform.scale(img, (75, 75))
-    screen.blit(img, (30, 130))
-    calendar_label = font.render("Calendar", True, (0, 0, 0))
-    calendar_label_rect = calendar_label.get_rect(center=(68, 210))
-    screen.blit(calendar_label, calendar_label_rect)
+    for shortcut in desktop_shortcuts:
+        icon = p.image.load(shortcut["image"]).convert_alpha()
+        icon = p.transform.scale(icon, shortcut["img-rect"].size)
+        screen.blit(icon, shortcut["img-rect"].topleft)
+        label = font.render(shortcut["name"], True, (0, 0, 0))
+        label_rect = label.get_rect(center=(shortcut["text-center"]))
+        screen.blit(label, label_rect)
+
+        if shortcut["name"] == "Email":
+            img = None
+            if unread_emails > 9:
+                img = p.image.load("thing/files/notification_9+.png").convert_alpha()
+            else:
+                img = p.image.load(f"thing/files/notification_{str(unread_emails)}.png").convert_alpha()
+            img = p.transform.scale(img, (30, 30))
+            temp_pos = shortcut["img-rect"].topleft
+            screen.blit(img, (temp_pos[0]+55, temp_pos[1]+5))
 
 def draw_selections(mouse_before, mouse_after):
-    if email_shortcut_selected:
-        p.draw.rect(selection_overlay, (0, 128, 255, 128), p.Rect(15, 25, 105, 105))
-        p.draw.rect(selection_overlay, (0, 0, 255), p.Rect(15, 25, 105, 105), width=2)
-    if calendar_shortcut_selected:
-        p.draw.rect(selection_overlay, (0, 128, 255, 128), p.Rect(15, 125, 105, 105))
-        p.draw.rect(selection_overlay, (0, 0, 255), p.Rect(15, 125, 105, 105), width=2)
+    for shortcut in desktop_shortcuts:
+        if shortcut["selected"]:
+            p.draw.rect(selection_overlay, (0, 128, 255, 128), shortcut["select-rect"])
+            p.draw.rect(selection_overlay, (0, 0, 255), shortcut["select-rect"], width=2)
+    
     if mouse_before != mouse_after:
         selection_rect = p.Rect(min(mouse_before[0], mouse_after[0]), min(mouse_before[1], mouse_after[1]), abs(mouse_after[0] - mouse_before[0]), abs(mouse_after[1] - mouse_before[1]))
         p.draw.rect(selection_overlay, (0, 128, 255, 128), selection_rect)
@@ -140,13 +160,12 @@ while running:
                 click_start.play()
             if event.button == 1:
                 if p.Rect(20, 670, 125, 40).collidepoint(event.pos):
-                    pressing.append(("start", p.Rect(20, 670, 125, 40)))
+                    pressing.append(("start", p.Rect(20, 670, 125, 40), False))
                 if p.Rect(40, 570, 40, 40).collidepoint(event.pos):
-                    pressing.append(("shutdown", p.Rect(40, 570, 40, 40)))
-                if p.Rect(30, 30, 75, 75).collidepoint(event.pos):
-                    pressing.append(("email_shortcut", p.Rect(30, 30, 75, 75)))
-                if p.Rect(30, 130, 75, 75).collidepoint(event.pos):
-                    pressing.append(("calendar_shortcut", p.Rect(30, 130, 75, 75)))
+                    pressing.append(("shutdown", p.Rect(40, 570, 40, 40), False))
+                for shortcut in desktop_shortcuts:
+                    if shortcut["rect"].collidepoint(event.pos):
+                        pressing.append((shortcut["name"], shortcut["rect"], shortcut))
             if len(pressing) == 0:
                 selection_box = True
                 mouse_before = p.mouse.get_pos()
@@ -161,35 +180,32 @@ while running:
                 click_end.play()
             if event.button == 1:
                 if selection_box:
-                    if p.Rect(30, 30, 75, 75).colliderect(p.Rect(min(mouse_before[0], mouse_after[0]), min(mouse_before[1], mouse_after[1]), abs(mouse_after[0] - mouse_before[0]), abs(mouse_after[1] - mouse_before[1]))):
-                        email_shortcut_selected = True
-                    if p.Rect(30, 130, 75, 75).colliderect(p.Rect(min(mouse_before[0], mouse_after[0]), min(mouse_before[1], mouse_after[1]), abs(mouse_after[0] - mouse_before[0]), abs(mouse_after[1] - mouse_before[1]))):
-                        calendar_shortcut_selected = True
-                selection_box = False
-                for i, (name, rect) in enumerate(pressing):
-                    if name == "start" and rect.collidepoint(event.pos):
-                        start_menu_open = not start_menu_open
-                    if name == "shutdown" and rect.collidepoint(event.pos):
-                        running = False
-                    if name == "email_shortcut" and rect.collidepoint(event.pos):
-                        if elapsed_time - email_timer < 0.5:
-                            email_activated = True
-                            email_timer = -10
-                            email_shortcut_selected = False
+                    for shortcut in desktop_shortcuts:
+                        if p.Rect(min(mouse_before[0], mouse_after[0]), min(mouse_before[1], mouse_after[1]), abs(mouse_after[0] - mouse_before[0]), abs(mouse_after[1] - mouse_before[1])).collidepoint(shortcut["rect"].center):
+                            shortcut["selected"] = True
+                selected = ""
+                for i, (name, rect, item) in enumerate(pressing):
+                    if item == None:
+                        if name == "start" and item.collidepoint(event.pos):
+                            start_menu_open = not start_menu_open
+                        if name == "shutdown" and item.collidepoint(event.pos):
+                            running = False
+                    elif item and rect.collidepoint(event.pos):
+                        if elapsed_time - item["timer"] < 0.5:
+                            item["timer"] = -10
+                            item["selected"] = False
                         else:
-                            email_timer = elapsed_time
-                            email_shortcut_selected = not email_shortcut_selected
-                        calendar_shortcut_selected = False
-                    if name == "calendar_shortcut" and rect.collidepoint(event.pos):
-                        if elapsed_time - calendar_timer < 0.5:
-                            calendar_activated = True
-                            calendar_timer = -10
-                            calendar_shortcut_selected = False
-                        else:
-                            calendar_timer = elapsed_time
-                            calendar_shortcut_selected = not calendar_shortcut_selected
-                        email_shortcut_selected = False
+                            selected = item["name"]
+                            print(f"Selected: {selected}")
+                            item["timer"] = elapsed_time
+                if selected != "":
+                    for shortcut in desktop_shortcuts[:]:
+                        shortcut["selected"] = (shortcut["name"] == selected)
+                elif not selection_box:
+                    for shortcut in desktop_shortcuts[:]:
+                        shortcut["selected"] = False
                 pressing.clear()
+                selection_box = False
     pressing = [x for x in pressing if x[1].collidepoint(p.mouse.get_pos())]
     if not selection_box:
         mouse_before = p.mouse.get_pos()
