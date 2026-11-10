@@ -21,29 +21,30 @@ background = p.transform.scale(background, (1280, 720))
 font = p.font.Font("thing/files/Silkscreen.ttf", 18)
 time_font = p.font.Font("thing/files/Silkscreen.ttf", 14)
 
+email_open = False
+calendar_open = False
+
 desktop_shortcuts = [{
     "name": "Email",
     "image": "thing/files/email_icon.png",
     "rect": p.Rect(30, 30, 75, 75),
     "img-rect": p.Rect(30, 30, 75, 75),
-    "func": None,
+    "func": lambda: exec("email_open = True"),
     "select-rect": p.Rect(15, 25, 105, 105),
     "text-center": (68, 110),
     "selected": False,
-    "timer": -10,
-    "active": False
+    "timer": -10
     },
     {
     "name": "Calendar",
     "image": "thing/files/calendar_icon.png",
     "rect": p.Rect(30, 130, 75, 75),
     "img-rect": p.Rect(30, 130, 75, 75),
-    "func": None,
+    "func": lambda: exec("calendar_open = True"),
     "select-rect": p.Rect(15, 125, 105, 105),
     "text-center": (68, 210),
     "selected": False,
-    "timer": -10,
-    "active": False
+    "timer": -10
     }]
 #note to self
 #dict structure is name=, image=, rect=, img-rect=, func=, select-rect=, text-center=, selected=, timer=, active=
@@ -205,9 +206,8 @@ while running:
                         if elapsed_time - item["timer"] < 0.5:
                             item["timer"] = -10
                             item["selected"] = False
-                            item["active"] = not item["active"]
                             if item["func"]:
-                                item["func"](item["active"])
+                                item["func"]()
                         else:
                             selected = item["name"]
                             print(f"Selected: {selected}")
