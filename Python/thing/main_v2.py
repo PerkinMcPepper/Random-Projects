@@ -21,15 +21,12 @@ background = p.transform.scale(background, (1280, 720))
 font = p.font.Font("thing/files/Silkscreen.ttf", 18)
 time_font = p.font.Font("thing/files/Silkscreen.ttf", 14)
 
-email_open = False
-calendar_open = False
-
 desktop_shortcuts = [{
     "name": "Email",
     "image": "thing/files/email_icon.png",
     "rect": p.Rect(30, 30, 75, 75),
     "img-rect": p.Rect(30, 30, 75, 75),
-    "func": lambda: exec("email_open = True"),
+    "func": lambda: exec("windows.append((\"email\", p.Rect(290, 110, 700, 500)))"),
     "select-rect": p.Rect(15, 25, 105, 105),
     "text-center": (68, 110),
     "selected": False,
@@ -40,7 +37,7 @@ desktop_shortcuts = [{
     "image": "thing/files/calendar_icon.png",
     "rect": p.Rect(30, 130, 75, 75),
     "img-rect": p.Rect(30, 130, 75, 75),
-    "func": lambda: exec("calendar_open = True"),
+    "func": lambda: exec("windows.append((\"calendar\", p.Rect(290, 110, 700, 500)))"),
     "select-rect": p.Rect(15, 125, 105, 105),
     "text-center": (68, 210),
     "selected": False,
@@ -48,6 +45,7 @@ desktop_shortcuts = [{
     }]
 #note to self
 #dict structure is name=, image=, rect=, img-rect=, func=, select-rect=, text-center=, selected=, timer=, active=
+windows = []
 time = ""
 date = ""
 unread_emails = 0
@@ -132,10 +130,20 @@ def draw_start_menu():
     shutdown_text_rect = shutdown_text.get_rect(center=(150, 590))
     screen.blit(shutdown_text, shutdown_text_rect)
 
-def draw_email_window():
-    frame_rect = p.Rect(0, 0, 1000, 500)
-    frame_rect.center = email_window_pos
-    p.draw.rect(screen, (212, 207, 201), frame_rect)
+def draw_windows():
+    global windows
+    for window in windows:
+        if window[0] == "email":
+            p.draw.rect(screen, (212, 207, 201), window[1])
+            draw_bevel(window[1], (212, 207, 201), 30, 2)
+            top_bar = p.Rect(window[1].x+3, window[1].y+3, window[1].width-6, 40)
+            p.draw.rect(screen, (0, 0, 255), top_bar)
+            icon = p.image.load("thing/files/email_icon.png")
+            icon = p.transform.scale(icon, (30, 30))
+            screen.blit(icon, p.Rect(top_bar.x+5, top_bar.y+5, 30, 30))
+            text = font.render("Email", True, (255, 255, 255))
+            text_rect = text.get_rect(centery = window[1].y+22, x = window[1].x + 50)
+            screen.blit(text, text_rect)
 
 running = True
 time_delta = 0
@@ -154,10 +162,13 @@ calendar_timer = -10
 calendar_activated = False
 calendar_window_pos = (640, 360)
 
-screen.fill((0, 0, 0))
-startup_sound.play()
-while startup_sound.get_num_channels() > 0:
-    p.time.delay(1)
+do_startup = False
+
+if do_startup:
+    screen.fill((0, 0, 0))
+    startup_sound.play()
+    while startup_sound.get_num_channels() > 0:
+        p.time.delay(1)
 
 while running:
     elapsed_time += time_delta
@@ -208,6 +219,7 @@ while running:
                             item["selected"] = False
                             if item["func"]:
                                 item["func"]()
+                            print(windows)
                         else:
                             selected = item["name"]
                             print(f"Selected: {selected}")
@@ -230,6 +242,7 @@ while running:
     draw_taskbar()
     draw_time_date(elapsed_time)
     draw_taskbar_buttons(any(x[0] == "start" for x in pressing))
+    draw_windows()
     if start_menu_open:
         draw_start_menu()
     p.display.flip()
