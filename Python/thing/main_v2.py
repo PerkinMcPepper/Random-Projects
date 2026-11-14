@@ -21,12 +21,14 @@ background = p.transform.scale(background, (1280, 720))
 font = p.font.Font("thing/files/Silkscreen.ttf", 18)
 time_font = p.font.Font("thing/files/Silkscreen.ttf", 14)
 
+id = -1
+
 desktop_shortcuts = [{
     "name": "Email",
     "image": "thing/files/email_icon.png",
     "rect": p.Rect(30, 30, 75, 75),
     "img-rect": p.Rect(30, 30, 75, 75),
-    "func": lambda: exec("windows.append((\"email\", p.Rect(290, 110, 700, 500)))"),
+    "func": lambda: exec("windows.append((\"email\", p.Rect(290, 110, 700, 500), id + 1))\nid += 1", globals()),
     "select-rect": p.Rect(15, 25, 105, 105),
     "text-center": (68, 110),
     "selected": False,
@@ -37,7 +39,7 @@ desktop_shortcuts = [{
     "image": "thing/files/calendar_icon.png",
     "rect": p.Rect(30, 130, 75, 75),
     "img-rect": p.Rect(30, 130, 75, 75),
-    "func": lambda: exec("windows.append((\"calendar\", p.Rect(290, 110, 700, 500)))"),
+    "func": lambda: exec("windows.append((\"calendar\", p.Rect(290, 110, 700, 500), id + 1))\nid += 1", globals()),
     "select-rect": p.Rect(15, 125, 105, 105),
     "text-center": (68, 210),
     "selected": False,
@@ -144,6 +146,12 @@ def draw_windows():
             text = font.render("Email", True, (255, 255, 255))
             text_rect = text.get_rect(centery = window[1].y+22, x = window[1].x + 50)
             screen.blit(text, text_rect)
+            close = p.Rect(top_bar.right - 31, top_bar.centery-10, 20, 20)
+            p.draw.rect(screen, (212, 207, 201), close)
+            minimise_icon = p.image.load("thing/files/close.png")
+            minimise_icon = p.transform.scale(minimise_icon, (20, 20))
+            screen.blit(minimise_icon, (close.x, close.y))
+            draw_bevel(close, (212, 207, 201), 20, 2)
 
 running = True
 time_delta = 0
